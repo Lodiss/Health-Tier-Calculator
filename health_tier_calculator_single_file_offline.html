@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kalkulator Health Tier – Modern</title>
+<style>
+  :root{
+    --bg: #0b1020;
+    --bg2:#0e1429;
+    --card:#121a34;
+    --muted:#9aa3b2;
+    --text:#e6e8ef;
+    --ring:#2d3b73;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --grad: radial-gradient(1000px 500px at 50% -100px, rgba(98,114,255,.25), transparent 60%),
+            radial-gradient(800px 400px at 100% 0%, rgba(255,98,214,.18), transparent 60%),
+            radial-gradient(600px 500px at 0% 0%, rgba(74,222,128,.12), transparent 60%);
+
+    /* Tier colors */
+    --tier-s:#1db954;      /* hijau tua */
+    --tier-a:#7cf69a;      /* hijau muda */
+    --tier-b:#ffd866;      /* kuning */
+    --tier-c:#ff9e64;      /* oranye */
+    --tier-d:#ff5c5c;      /* merah */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--text); font: 16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+  .bgfx{position:fixed; inset:0; background:var(--grad); z-index:-1; filter:saturate(115%)}
+
+  header{max-width:1100px; margin:28px auto 6px; padding:0 16px}
+  h1{font-size: clamp(24px, 4vw, 36px); margin:0; font-weight:800; letter-spacing:.3px}
+  .sub{margin:8px 0 0; color:var(--muted)}
+
+  .wrap{max-width:1100px; margin:18px auto 40px; padding:0 16px}
+  .grid{display:grid; grid-template-columns:1fr; gap:16px}
+  @media(min-width:900px){.grid{grid-template-columns: 380px 1fr}}
+
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.06); border-radius:20px; padding:16px; box-shadow:var(--shadow)}
+  .card h2{margin:4px 0 12px; font-size:18px}
+
+  .field{margin:10px 0}
+  .label{font-size:13px; color:var(--muted); margin-bottom:6px}
+  .input{width:100%; background:var(--bg2); color:var(--text); padding:12px 14px; border-radius:12px; border:1px solid #1c2446; outline:none; transition: .2s border, .2s box-shadow}
+  .input:focus{border-color: #6a7bff; box-shadow:0 0 0 6px rgba(106,123,255,.12)}
+
+  .controls{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+  .btn{display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,#6a7bff,#a76cff); color:white; border:none; border-radius:12px; padding:12px 18px; font-weight:700; letter-spacing:.3px; cursor:pointer; box-shadow:0 10px 25px rgba(123,97,255,.28); transition: transform .08s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn.secondary{background:linear-gradient(135deg,#2a335e,#3b4579); font-weight:600}
+  .btn.ghost{background:transparent; border:1px solid #27305e; color:#cfd6ff; font-weight:600}
+
+  /* cards for results */
+  .results{display:grid; grid-template-columns:1fr; gap:14px}
+  @media(min-width:720px){.results{grid-template-columns:repeat(2, 1fr)}}
+  @media(min-width:1100px){.results{grid-template-columns:repeat(3, 1fr)}}
+
+  .nutri-card{position:relative; background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:16px; box-shadow:var(--shadow); overflow:hidden}
+  .nutri-head{display:flex; align-items:center; gap:12px; margin-bottom:10px}
+  .nutri-title{font-weight:800}
+  .nutri-value{color:var(--muted); font-size:13px}
+  .nutri-note{margin-top:10px; color:#cdd3df; font-size:13px}
+
+  .badge{position:absolute; top:14px; right:14px; font-weight:900; padding:6px 10px; border-radius:10px; color:#0b0b0b; text-shadow:0 0 10px rgba(0,0,0,.25); box-shadow:0 6px 18px rgba(0,0,0,.25)}
+  .glow{filter: drop-shadow(0 0 14px rgba(255,255,255,.22));}
+
+  .tier-s{background:linear-gradient(135deg, var(--tier-s), #0ecf71); color:#08140d}
+  .tier-a{background:linear-gradient(135deg, var(--tier-a), #b7ffce)}
+  .tier-b{background:linear-gradient(135deg, var(--tier-b), #ffe8a6)}
+  .tier-c{background:linear-gradient(135deg, var(--tier-c), #ffc19c); color:#1e0f0a}
+  .tier-d{background:linear-gradient(135deg, var(--tier-d), #ff8a8a); color:#140808}
+
+  /* Icon base */
+  .icon{width:40px; height:40px; flex:0 0 40px}
+  .icon svg{width:100%; height:100%;}
+
+  /* conclusion */
+  .conclusion{margin-top:18px; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:16px; box-shadow:var(--shadow)}
+  .hidden{display:none}
+
+  /* appear animation */
+  .fade-in{opacity:0; transform: translateY(6px); animation: enter .35s ease forwards}
+  @keyframes enter{to{opacity:1; transform:translateY(0)}}
+
+  footer{max-width:1100px; margin:0 auto 24px; padding:0 16px; color:var(--muted); font-size:12px}
+</style>
+</head>
+<body>
+  <div class="bgfx" aria-hidden="true"></div>
+  <header>
+    <h1>Health Tier Calculator</h1>
+    <p class="sub">Isi data nutrisi per 100 gram, klik <strong>Cek</strong>, dan dapatkan tier tiap nutrisi, ringkasan formal, serta rekomendasi konsumsi.</p>
+  </header>
+
+  <div class="wrap grid">
+    <div class="card" role="form" aria-labelledby="formTitle">
+      <h2 id="formTitle">Input Data</h2>
+      <div class="field">
+        <label class="label" for="energy">Energi (kJ per 100 g)</label>
+        <input id="energy" type="number" min="0" step="1" class="input" placeholder="mis. 350" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="label" for="fat">Lemak Jenuh (g per 100 g)</label>
+        <input id="fat" type="number" min="0" step="0.1" class="input" placeholder="mis. 1.2" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="label" for="sugar">Gula (g per 100 g)</label>
+        <input id="sugar" type="number" min="0" step="0.1" class="input" placeholder="mis. 7.5" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="label" for="sodium">Natrium (mg per 100 g)</label>
+        <input id="sodium" type="number" min="0" step="1" class="input" placeholder="mis. 320" inputmode="numeric" />
+      </div>
+      <div class="field">
+        <label class="label" for="nutri">Nutrien Positif (g per 100 g)</label>
+        <input id="nutri" type="number" min="0" step="0.1" class="input" placeholder="mis. 8.0" inputmode="decimal" />
+      </div>
+      <div class="controls">
+        <button class="btn" id="checkBtn" type="button" aria-label="Cek hasil">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#a2b3ff"/><stop offset="1" stop-color="#ff9de6"/></linearGradient></defs></svg>
+          Cek
+        </button>
+        <button class="btn secondary" id="sampleBtn" type="button">Isi Contoh</button>
+        <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+      </div>
+      <p class="sub" style="margin-top:10px">Warna tier: S (hijau tua), A (hijau muda), B (kuning), C (oranye), D (merah).</p>
+    </div>
+
+    <div>
+      <div id="resultGrid" class="results" aria-live="polite"></div>
+      <div id="overall" class="conclusion hidden"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Tip: tekan <kbd>Enter</kbd> saat fokus di input untuk langsung menghitung. Data terakhir otomatis tersimpan di perangkat (localStorage).</p>
+  </footer>
+
+<script>
+  // ===== Tier functions (sesuai kesepakatan) =====
+  function tierEnergy(kj){ if(isNaN(kj)) return ''; if(kj<=149) return 'S'; if(kj<=399) return 'A'; if(kj<=799) return 'B'; if(kj<=1399) return 'C'; return 'D'; }
+  function tierFat(g){ if(isNaN(g)) return ''; if(g<=0.5) return 'S'; if(g<=1.5) return 'A'; if(g<=4.9) return 'B'; if(g<=9.9) return 'C'; return 'D'; }
+  function tierSugar(g){ if(isNaN(g)) return ''; if(g<=2) return 'S'; if(g<=5) return 'A'; if(g<=10) return 'B'; if(g<=20) return 'C'; return 'D'; }
+  function tierSodium(mg){ if(isNaN(mg)) return ''; if(mg<=120) return 'S'; if(mg<=300) return 'A'; if(mg<=600) return 'B'; if(mg<=900) return 'C'; return 'D'; }
+  function tierNutri(g){ if(isNaN(g)) return ''; if(g>=15) return 'S'; if(g>=10) return 'A'; if(g>=5) return 'B'; if(g>=2) return 'C'; return 'D'; }
+
+  const tierToScore = t => ({'S':5,'A':4,'B':3,'C':2,'D':1}[t] || 0);
+  const scoreToTier = sc => { if(sc>=4.6) return 'S'; if(sc>=3.6) return 'A'; if(sc>=2.6) return 'B'; if(sc>=1.6) return 'C'; return 'D'; };
+
+  // ===== Icon SVGs =====
+  function iconEnergy(){return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+    <defs><linearGradient id='ge' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#a2b3ff'/><stop offset='1' stop-color='#ff9de6'/></linearGradient></defs>
+    <path d='M13 2 4 14h6l-1 8 9-12h-6l1-8z' fill='url(#ge)'/></svg>`}
+  function iconFat(){return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+    <defs><linearGradient id='gf' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#7cf69a'/><stop offset='1' stop-color='#1db954'/></linearGradient></defs>
+    <path d='M12 3c-3 3-6 7-6 10a6 6 0 0 0 12 0c0-3-3-7-6-10z' fill='url(#gf)'/></svg>`}
+  function iconSugar(){return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+    <defs><linearGradient id='gs' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#ffe38b'/><stop offset='1' stop-color='#ffd866'/></linearGradient></defs>
+    <path d='M12 2 3 7v10l9 5 9-5V7l-9-5zm0 3.2 6 3.3v6.9l-6 3.3-6-3.3V8.5l6-3.3z' fill='url(#gs)'/></svg>`}
+  function iconSodium(){return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+    <defs><linearGradient id='gn' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#ffb38a'/><stop offset='1' stop-color='#ff9e64'/></linearGradient></defs>
+    <path d='M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8zm0 10.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z' fill='url(#gn)'/></svg>`}
+  function iconNutri(){return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+    <defs><linearGradient id='gp' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#9de8ff'/><stop offset='1' stop-color='#9d9bff'/></linearGradient></defs>
+    <path d='M4 12c0 4.4 3.6 8 8 8s8-3.6 8-8H4zm14-2c0-3.3-2.7-6-6-6S6 6.7 6 10h12z' fill='url(#gp)'/></svg>`}
+
+  const defs = {
+    energy: {name:'Energi', unit:'kJ', icon: iconEnergy},
+    fat:    {name:'Lemak Jenuh', unit:'g', icon: iconFat},
+    sugar:  {name:'Gula', unit:'g', icon: iconSugar},
+    sodium: {name:'Natrium', unit:'mg', icon: iconSodium},
+    nutri:  {name:'Nutrien Positif', unit:'g', icon: iconNutri},
+  };
+
+  // ===== Note generators (formal) =====
+  function noteEnergy(v,t){
+    const base = `Kandungan energi sebesar ${v} kJ per 100 g.`;
+    switch(t){
+      case 'S': return base+" Nilai ini sangat rendah sehingga sesuai untuk makanan ringan rendah energi. <strong>Cocok bagi individu yang sedang mengontrol asupan kalori.</strong>";
+      case 'A': return base+" Kategori rendah; <strong>aman untuk konsumsi rutin</strong> bila porsi terkendali.";
+      case 'B': return base+" Termasuk sedang; <strong>perhatikan porsi</strong> agar total asupan harian tidak berlebih.";
+      case 'C': return base+" Cukup tinggi; <strong>tidak disarankan untuk pola makan rendah kalori</strong>.";
+      default: return base+" Sangat tinggi; <strong>sebaiknya dibatasi</strong>, khususnya pada program penurunan berat badan.";
+    }
+  }
+  function noteFat(v,t){
+    const base = `Lemak jenuh ${v} g per 100 g.`;
+    switch(t){
+      case 'S': return base+" Sangat rendah; <strong>baik untuk kesehatan kardiovaskular</strong>.";
+      case 'A': return base+" Rendah; <strong>masih sesuai</strong> dengan anjuran asupan lemak jenuh harian.";
+      case 'B': return base+" Sedang; <strong>konsumsi dengan porsi wajar</strong> untuk menjaga profil lipid darah.";
+      case 'C': return base+" Tinggi; <strong>kurangi frekuensi konsumsi</strong>, khususnya bagi penderita dislipidemia.";
+      default: return base+" Sangat tinggi; <strong>tidak cocok untuk penderita kolesterol tinggi</strong> dan perlu pembatasan ketat.";
+    }
+  }
+  function noteSugar(v,t){
+    const base = `Gula total ${v} g per 100 g.`;
+    switch(t){
+      case 'S': return base+" Sangat rendah; <strong>aman untuk konsumsi rutin</strong>.";
+      case 'A': return base+" Rendah; <strong>mendukung kontrol glikemik</strong> bila porsi terjaga.";
+      case 'B': return base+" Sedang; <strong>batasi tambahan gula dari sumber lain</strong> pada hari yang sama.";
+      case 'C': return base+" Tinggi; <strong>tidak ideal untuk penderita prediabetes/diabetes</strong> serta anak-anak jika dikonsumsi berlebihan.";
+      default: return base+" Sangat tinggi; <strong>sebaiknya dihindari untuk pengelolaan gula darah</strong> dan kesehatan gigi.";
+    }
+  }
+  function noteSodium(v,t){
+    const base = `Natrium ${v} mg per 100 g.`;
+    switch(t){
+      case 'S': return base+" Sangat rendah; <strong>baik untuk tekanan darah</strong>.";
+      case 'A': return base+" Rendah; <strong>aman untuk diet rendah garam</strong>.";
+      case 'B': return base+" Sedang; <strong>batasi makanan asin lain</strong> pada hari yang sama.";
+      case 'C': return base+" Tinggi; <strong>tidak disarankan untuk hipertensi</strong> atau retensi cairan.";
+      default: return base+" Sangat tinggi; <strong>hindari bagi penderita hipertensi</strong> dan penyakit ginjal kecuali atas saran tenaga kesehatan.";
+    }
+  }
+  function noteNutri(v,t){
+    const base = `Komponen nutrien positif ${v} g per 100 g (mis. protein/serat).`;
+    switch(t){
+      case 'S': return base+" Sangat tinggi; <strong>memberi kontribusi gizi yang baik</strong> pada rasa kenyang dan kualitas diet.";
+      case 'A': return base+" Tinggi; <strong>menguntungkan untuk pemenuhan gizi harian</strong>.";
+      case 'B': return base+" Sedang; <strong>tetap bermanfaat</strong>, namun seimbangkan dengan sumber gizi lain.";
+      case 'C': return base+" Rendah; <strong>tambahkan lauk tinggi protein atau serat</strong> saat mengonsumsi produk ini.";
+      default: return base+" Sangat rendah; <strong>nilai gizi positif minimal</strong>, sebaiknya tidak dijadikan sumber utama nutrien.";
+    }
+  }
+
+  const noteMap = { energy:noteEnergy, fat:noteFat, sugar:noteSugar, sodium:noteSodium, nutri:noteNutri };
+
+  const tierClass = t => ({S:'tier-s',A:'tier-a',B:'tier-b',C:'tier-c',D:'tier-d'}[t]||'');
+
+  // Render one nutrient card
+  function renderCard(key, value, tier){
+    const d = defs[key];
+    const note = noteMap[key](value, tier);
+    return `<div class='nutri-card fade-in'>
+      <div class='badge glow ${tierClass(tier)}'>${tier}</div>
+      <div class='nutri-head'>
+        <div class='icon glow'>${d.icon()}</div>
+        <div>
+          <div class='nutri-title'>${d.name}</div>
+          <div class='nutri-value'>${Number(value)} ${d.unit} / 100 g</div>
+        </div>
+      </div>
+      <div class='nutri-note'>${note}</div>
+    </div>`;
+  }
+
+  function getVals(){
+    return {
+      energy: Number(document.getElementById('energy').value),
+      fat:    Number(document.getElementById('fat').value),
+      sugar:  Number(document.getElementById('sugar').value),
+      sodium: Number(document.getElementById('sodium').value),
+      nutri:  Number(document.getElementById('nutri').value)
+    };
+  }
+
+  function calculate(){
+    const {energy,fat,sugar,sodium,nutri} = getVals();
+
+    // compute tiers
+    const TE = tierEnergy(energy);
+    const TF = tierFat(fat);
+    const TS = tierSugar(sugar);
+    const TN = tierSodium(sodium);
+    const TP = tierNutri(nutri);
+
+    // render cards
+    const grid = document.getElementById('resultGrid');
+    grid.innerHTML = [
+      renderCard('energy', energy, TE),
+      renderCard('fat',    fat,    TF),
+      renderCard('sugar',  sugar,  TS),
+      renderCard('sodium', sodium, TN),
+      renderCard('nutri',  nutri,  TP)
+    ].join('');
+
+    // overall
+    const avgScore = (tierToScore(TE)+tierToScore(TF)+tierToScore(TS)+tierToScore(TN)+tierToScore(TP))/5;
+    const overallTier = scoreToTier(avgScore);
+
+    const concl = document.getElementById('overall');
+    concl.classList.remove('hidden');
+    concl.classList.add('fade-in');
+
+    const overallText = (()=>{
+      let msg = `Secara keseluruhan, produk ini memperoleh tier <strong>${overallTier}</strong> berdasarkan rata-rata semua indikator.`;
+      if(overallTier==='S'||overallTier==='A'){
+        msg += " <strong>Layak untuk konsumsi rutin</strong> dengan porsi yang sesuai dan tetap memperhatikan variasi pangan.";
+      }else if(overallTier==='B'){
+        msg += " <strong>Masih dapat dikonsumsi</strong>, namun perhatikan porsi dan imbangi dengan sayur/buah serta air putih.";
+      }else if(overallTier==='C'){
+        msg += " <strong>Tidak disarankan untuk dikonsumsi setiap hari</strong>, terutama bila asupan gula/garam/lemak harian sudah tinggi.";
+      }else{
+        msg += " <strong>Sebaiknya dibatasi</strong> dan tidak cocok sebagai pilihan harian, khususnya bagi individu dengan kebutuhan khusus.";
+      }
+      // spesifik kelompok risiko
+      const risk = [];
+      if(TS==='C'||TS==='D') risk.push('penderita <strong>diabetes/prediabetes</strong>');
+      if(TN==='C'||TN==='D') risk.push('penderita <strong>hipertensi/penyakit ginjal</strong>');
+      if(TF==='C'||TF==='D') risk.push('individu dengan <strong>dislipidemia/kolesterol tinggi</strong>');
+      if(risk.length){ msg += ` Tidak cocok untuk ${risk.join(', ')}.`; }
+      return msg;
+    })();
+
+    concl.innerHTML = `<div style='display:flex; align-items:center; gap:10px; margin-bottom:8px;'>
+        <span class='badge glow ${tierClass(overallTier)}' style='position:static'>${overallTier}</span>
+        <strong>Kesimpulan</strong>
+      </div>
+      <p style='margin:0; color:#d7dbee'>${overallText}</p>`;
+
+    // save to localStorage
+    try{
+      localStorage.setItem('healthTier:last', JSON.stringify({energy,fat,sugar,sodium,nutri}));
+    }catch(e){/* ignore */}
+  }
+
+  // ===== helpers: sample + reset + enter submit + restore =====
+  function fillSample(){
+    const sample = { energy: 350, fat: 1.2, sugar: 7.5, sodium: 320, nutri: 8.0 };
+    for(const k in sample){ document.getElementById(k).value = sample[k]; }
+    calculate();
+  }
+
+  function resetForm(){
+    ['energy','fat','sugar','sodium','nutri'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('resultGrid').innerHTML='';
+    const concl = document.getElementById('overall');
+    concl.classList.add('hidden');
+    concl.innerHTML='';
+  }
+
+  function handleEnterToCalculate(e){
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      calculate();
+    }
+  }
+
+  function restoreLast(){
+    try{
+      const last = JSON.parse(localStorage.getItem('healthTier:last')||'null');
+      if(last){
+        for(const k in last){ if(document.getElementById(k)) document.getElementById(k).value = last[k]; }
+      }
+    }catch(e){/* ignore */}
+  }
+
+  document.getElementById('checkBtn').addEventListener('click', calculate);
+  document.getElementById('sampleBtn').addEventListener('click', fillSample);
+  document.getElementById('resetBtn').addEventListener('click', resetForm);
+  ['energy','fat','sugar','sodium','nutri'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', handleEnterToCalculate);
+  });
+  document.addEventListener('DOMContentLoaded', restoreLast);
+</script>
+</body>
+</html>
